@@ -1,12 +1,13 @@
-from modello.subnet import Subnet
-
+from typing import List
+from modello.subnet import Subnet  # Importa la classe Subnet dal modulo appropriato
 
 class Rete:
-        def __init__(self, subnet=None):
-            self._subnet = subnet if subnet else []
+    def __init__(self):
+        self._lista_subnet: List[Subnet] = []
 
-        def aggiungi_subnet(self, subnet):
-            if isinstance(subnet, Subnet):
-                self._subnet.append(subnet)
-            else:
-                raise TypeError("Deve essere un oggetto di tipo 'Subnet'")
+    @property
+    def lista_subnet(self) -> List[Subnet]:
+        return self._lista_subnet
+
+    def aggiungi_subnet(self, subnet: Subnet):
+        self._lista_subnet.append(subnet)
