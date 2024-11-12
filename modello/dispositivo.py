@@ -1,20 +1,28 @@
+from enum import Enum
+from typing import List, Dict, Optional
+
+# Definiamo l'Enum per il tipo di dispositivo
+class TipoDispositivo(Enum):
+    CLIENT = "Client"
+    SERVER = "Server"
+    UNKNOWN = "Sconosciuto"
+
 class Dispositivo:
-    def __init__(self, ip, mac, tipoDispositivo, so, nomeHost, tempoRisposta, ttl, stato, porteAperte=None,
-                 serviziAttivi=None):
+    def __init__(self, ip: Optional[str] = None, mac: Optional[str] = None, tipo_dispositivo: Optional[TipoDispositivo] = TipoDispositivo.UNKNOWN,
+                 so: Optional[str] = None, nome_host: Optional[str] = None, tempo_risposta: float = 0.0,
+                 ttl: float = 0.0, stato: Optional[str] = None):
         self._ip = ip
         self._mac = mac
-        self._tipoDispositivo = tipoDispositivo
+        self._tipo_dispositivo = tipo_dispositivo  # Presuppone che tipo_dispositivo sia un'istanza dell'Enum TipoDispositivo
         self._so = so
-        self._nomeHost = nomeHost
-        self._tempoRisposta = tempoRisposta
+        self._nome_host = nome_host
+        self._tempo_risposta = tempo_risposta
         self._ttl = ttl
         self._stato = stato
-        # Porte aperte: una lista, se non fornita è una lista vuota
-        self._porteAperte = porteAperte if porteAperte is not None else []
-        # Servizi attivi: un dizionario (porta: servizio), se non fornito è un dizionario vuoto
-        self._serviziAttivi = serviziAttivi if serviziAttivi is not None else {}
+        self._porte_aperte: List[int] = []
+        self._servizi_attivi: Dict[int, str] = {}
 
-    # Getter e Setter per l'attributo 'ip'
+    # Proprietà per IP
     @property
     def ip(self):
         return self._ip
@@ -23,7 +31,7 @@ class Dispositivo:
     def ip(self, value):
         self._ip = value
 
-    # Getter e Setter per l'attributo 'mac'
+    # Proprietà per MAC
     @property
     def mac(self):
         return self._mac
@@ -32,16 +40,19 @@ class Dispositivo:
     def mac(self, value):
         self._mac = value
 
-    # Getter e Setter per l'attributo 'tipoDispositivo'
+    # Proprietà per TipoDispositivo
     @property
-    def tipoDispositivo(self):
-        return self._tipoDispositivo
+    def tipo_dispositivo(self):
+        return self._tipo_dispositivo
 
-    @tipoDispositivo.setter
-    def tipoDispositivo(self, value):
-        self._tipoDispositivo = value
+    @tipo_dispositivo.setter
+    def tipo_dispositivo(self, value):
+        if isinstance(value, TipoDispositivo):
+            self._tipo_dispositivo = value
+        else:
+            raise ValueError(f"Tipo di dispositivo non valido: {value}")
 
-    # Getter e Setter per l'attributo 'so' (sistema operativo)
+    # Proprietà per SO
     @property
     def so(self):
         return self._so
@@ -50,27 +61,25 @@ class Dispositivo:
     def so(self, value):
         self._so = value
 
-    # Getter e Setter per l'attributo 'nomeHost'
+    # Proprietà per NomeHost
     @property
-    def nomeHost(self):
-        return self._nomeHost
+    def nome_host(self):
+        return self._nome_host
 
-    @nomeHost.setter
-    def nomeHost(self, value):
-        self._nomeHost = value
+    @nome_host.setter
+    def nome_host(self, value):
+        self._nome_host = value
 
-    # Getter e Setter per l'attributo 'tempoRisposta'
+    # Proprietà per TempoRisposta
     @property
-    def tempoRisposta(self):
-        return self._tempoRisposta
+    def tempo_risposta(self):
+        return self._tempo_risposta
 
-    @tempoRisposta.setter
-    def tempoRisposta(self, value):
-        if value < 0:
-            raise ValueError("Il tempo di risposta non può essere negativo.")
-        self._tempoRisposta = value
+    @tempo_risposta.setter
+    def tempo_risposta(self, value):
+        self._tempo_risposta = value
 
-    # Getter e Setter per l'attributo 'ttl'
+    # Proprietà per TTL
     @property
     def ttl(self):
         return self._ttl
@@ -79,58 +88,37 @@ class Dispositivo:
     def ttl(self, value):
         self._ttl = value
 
-    # Getter e Setter per l'attributo 'stato'
+    # Proprietà per Stato
     @property
     def stato(self):
         return self._stato
 
     @stato.setter
     def stato(self, value):
-        if value not in ["Attivo", "Inattivo"]:
-            raise ValueError("Stato non valido. Deve essere 'Attivo' o 'Inattivo'.")
         self._stato = value
 
-    # Getter e Setter per l'attributo 'porteAperte'
+    # Metodi per PorteAperte
     @property
-    def porteAperte(self):
-        return self._porteAperte
+    def porte_aperte(self):
+        return self._porte_aperte
 
-    @porteAperte.setter
-    def porteAperte(self, value):
-        if not isinstance(value, list):
-            raise TypeError("Le porte aperte devono essere una lista.")
-        self._porteAperte = value
+    def aggiungi_porta_aperta(self, porta: int):
+        self._porte_aperte.append(porta)
 
-    # Getter e Setter per l'attributo 'serviziAttivi'
+    # Metodi per ServiziAttivi
     @property
-    def serviziAttivi(self):
-        return self._serviziAttivi
+    def servizi_attivi(self):
+        return self._servizi_attivi
 
-    @serviziAttivi.setter
-    def serviziAttivi(self, value):
-        if not isinstance(value, dict):
-            raise TypeError("I servizi attivi devono essere un dizionario con chiave porta e valore servizio.")
-        self._serviziAttivi = value
+    def aggiungi_servizio_attivo(self, chiave: int, valore: str):
+        self._servizi_attivi[chiave] = valore
 
-    def aggiungi_servizio(self, porta, servizio):
-        """
-        Aggiunge un servizio alla mappa dei servizi attivi, associandolo alla porta.
-        """
-        if not isinstance(porta, int) or not isinstance(servizio, str):
-            raise ValueError("La porta deve essere un intero e il servizio deve essere una stringa.")
-        self._serviziAttivi[porta] = servizio
+    def get_servizio_attivo(self, chiave: int):
+        return self._servizi_attivi.get(chiave)
 
-    def rimuovi_servizio(self, porta):
-        """
-        Rimuove il servizio associato alla determinata porta.
-        """
-        if porta in self._serviziAttivi:
-            del self._serviziAttivi[porta]
-        else:
-            raise KeyError(f"Porta {porta} non trovata nei servizi attivi.")
-
+    # Metodo __str__ per rappresentazione leggibile
     def __str__(self):
-        return (f"Dispositivo(ip={self._ip}, mac={self._mac}, tipoDispositivo={self._tipoDispositivo}, "
-                f"so={self._so}, nomeHost={self._nomeHost}, tempoRisposta={self._tempoRisposta}, "
-                f"ttl={self._ttl}, stato={self._stato}, porteAperte={self._porteAperte}, "
-                f"serviziAttivi={self._serviziAttivi})")
+        return (f"Dispositivo(ip={self._ip}, mac={self._mac}, tipo_dispositivo={self._tipo_dispositivo}, "
+                f"so={self._so}, nome_host={self._nome_host}, tempo_risposta={self._tempo_risposta}, "
+                f"ttl={self._ttl}, stato={self._stato}, porte_aperte={self._porte_aperte}, "
+                f"servizi_attivi={self._servizi_attivi})")
