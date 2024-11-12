@@ -58,6 +58,3 @@ class ScannerRete:
         # Log dei dispositivi trovati
         self.logger.info(f"Totale dispositivi rilevati: {len(dispositivi)}")
 
-        # Puoi anche registrare i dettagli di tutti i dispositivi
-        for dispositivo in dispositivi:
-            self.logger.info(f"Dispositivo: {dispositivo}")
