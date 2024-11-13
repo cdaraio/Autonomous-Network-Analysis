@@ -45,7 +45,7 @@ class Applicazione:
         # Inizializzazione del Frame
         self.frame = Frame()  # Supponiamo che tu abbia questa classe nella tua applicazione
         self.frame.initComponents()  # Assicurati che la funzione initComponents() venga chiamata per inizializzare gli elementi grafici
-        self.frame.show()  # Mostra il frame
+        #self.frame.show()  # Mostra il frame
 
         # Avvia la scansione della rete
         self.scanner_rete.scan()  # Esegui la scansione della rete
