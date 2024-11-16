@@ -2,6 +2,7 @@ import scapy.all as scapy
 from modello.dispositivo import Dispositivo
 from modello.enum_dispositivo import TipoDispositivo
 import socket
+import time
 import logging
 
 class ScannerRete:
@@ -59,33 +60,46 @@ class ScannerRete:
             ip = risposta[1].psrc  # IP del dispositivo che ha risposto
             mac = risposta[1].hwsrc  # MAC del dispositivo che ha risposto
 
-            # Esegui una scansione delle porte aperte per questo dispositivo e ottieni i servizi attivi
-            servizi_attivi = self.scan_ports(ip)
+            # Ottenere informazioni aggiuntive (TTL, sistema operativo, tempo di risposta)
+            try:
+                start_time = time.time()  # Registra il tempo di partenza
+                risposta_ping = scapy.sr1(scapy.IP(dst=ip) / scapy.ICMP(), timeout=1, verbose=False)
+                if risposta_ping:
+                    ttl = risposta_ping.ttl  # Time to Live dal pacchetto ICMP
+                    tempo_risposta = time.time() - start_time  # Calcola il tempo di risposta
+                    sistema_operativo = self.deduce_os(ttl)  # Metodo per dedurre il sistema operativo in base al TTL
+                else:
+                    ttl = "Sconosciuto"
+                    tempo_risposta = "Non disponibile"
+                    sistema_operativo = "Sconosciuto"
 
-            # Crea un nuovo oggetto Dispositivo
-            dispositivo = Dispositivo(
-                ip=ip,  # Indirizzo IP del dispositivo
-                mac=mac,  # Indirizzo MAC
-               # tipo_dispositivo=TipoDispositivo.CLIENT,  # Tipo di dispositivo (Client), opzionale
-                so="Non disponibile",  # Sistema operativo (se non disponibile)
-                nome_host="Non disponibile",  # Nome host (se non disponibile)
-                tempo_risposta=0.0,  # Tempo di risposta (non disponibile con ARP)
-                ttl=0,  # TTL (non disponibile con ARP)
-                stato="Attivo"  # Stato del dispositivo
-            )
+                # Eseguire la scansione delle porte per ottenere i servizi attivi
+                servizi_attivi = self.scan_ports(ip)
 
-            # Aggiungi i servizi attivi al dispositivo utilizzando il metodo aggiungi_servizio_attivo
-            for porta, servizio in servizi_attivi.items():
-                dispositivo.aggiungi_servizio_attivo(porta, servizio)
-
-            dispositivi.append(dispositivo)
-
-            # Log delle informazioni del dispositivo trovato
-            self.logger.info(f"Dispositivo trovato: {dispositivo}")
-            if servizi_attivi:
-                self.logger.info(f"Servizi attivi su {ip}: {servizi_attivi}")
+                dispositivo = {
+                    'IP': ip,
+                    'MAC': mac,
+                    'Sistema Operativo': sistema_operativo,
+                    'TTL': ttl,
+                    'Tempo di Risposta': f"{tempo_risposta:.4f} s" if isinstance(tempo_risposta,
+                                                                                 float) else tempo_risposta,
+                    'Servizi Attivi': servizi_attivi
+                }
+                dispositivi.append(dispositivo)
+                self.logger.info(f"Dispositivo trovato: {dispositivo}")
+            except Exception as e:
+                self.logger.error(f"Errore durante la scansione di {ip}: {e}")
 
         return dispositivi
+
+    def deduce_os(self, ttl):
+        """Metodo per dedurre il sistema operativo in base al TTL osservato"""
+        if ttl >= 128:
+            return "Sistema Windows (possibile)"
+        elif ttl <= 64:
+            return "Sistema Unix/Linux (possibile)"
+        else:
+            return "Sistema operativo sconosciuto"
 
     def scan(self):
         """Funzione di scansione che avvia la rilevazione dei dispositivi sulla rete"""

@@ -68,4 +68,4 @@ if __name__ == "__main__":
     applicazione = Applicazione.get_instance()
     applicazione.inizializza()
 
-    app.exec_()  # Avvia l'evento loop di Qt
+    app.exec_()  # Avvia l'evento loop di Qta
