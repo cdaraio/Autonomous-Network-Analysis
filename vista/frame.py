@@ -1,27 +1,35 @@
-from PyQt5.QtWidgets import QMainWindow, QMenuBar, QMenu, QAction
+import tkinter as tk
+import threading
 
-class Frame(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        # Inizializzazione dei componenti
-        self.initComponents()
+class VistaPrincipale(tk.Frame):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.master = master
+        self.create_widgets()
 
-    def initComponents(self):
-        """Metodo che inizializza i componenti della finestra"""
-        self.setWindowTitle("Finestra Principale")
-        self.setGeometry(100, 100, 648, 516)  # Posizione e dimensioni della finestra
+    def create_widgets(self):
+        self.label = tk.Label(self, text="Benvenuto nella Scansione!")
+        self.label.pack(padx=10, pady=10)  # Mostra la label
 
-        # Creazione della barra dei menu
-        self.menubar = self.menuBar()
+        self.bottone = tk.Button(self, text="Avvia Scansione", command=self.avvia_scansione)
+        self.bottone.pack(padx=10, pady=10)  # Mostra il bottone
 
-        # Creazione del menu "File"
-        self.menu_file = self.menubar.addMenu("File")
+    def avvia_scansione(self):
+        self.label.config(text="Scansione Iniziata...")
+        threading.Thread(target=self.scansione_rilevamento).start()
 
-        # Aggiunta dell'opzione "Esci"
-        self.esci_action = QAction("Esci", self)
-        self.esci_action.triggered.connect(self.esci)  # Connessione al metodo esci()
-        self.menu_file.addAction(self.esci_action)
+    def scansione_rilevamento(self):
+        # Simula un processo di scansione lento
+        import time
+        time.sleep(5)  # Simula un'attività che richiede tempo
+        self.label.config(text="Scansione Completa!")
 
-    def esci(self):
-        """Metodo per chiudere l'applicazione"""
-        self.close()
+def run_app():
+    root = tk.Tk()  # Crea la finestra principale
+    root.title("Network Topology Mapper")
+    app = VistaPrincipale(master=root)  # Crea l'istanza della vista
+    app.pack()  # Aggiungi la vista al contenitore principale
+    root.mainloop()  # Avvia il loop dell'interfaccia grafica
+
+if __name__ == "__main__":
+    run_app()

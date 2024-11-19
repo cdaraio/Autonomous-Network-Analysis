@@ -21,7 +21,7 @@ class ScannerRete:
         risposta = scapy.sr1(scapy.IP(dst=ip)/scapy.ICMP(), timeout=1, verbose=False)
         return risposta
 
-    def scan_ports(self, ip, port_range=[80, 443, 22, 21]):
+    def scan_ports(self, ip, port_range=[80, 443, 22, 21, 51820]):
         """Scansiona le porte aperte per un dato IP e associa il servizio alla porta aperta"""
         servizi_attivi = {}
         for porta in port_range:
@@ -33,7 +33,7 @@ class ScannerRete:
                 if risultato == 0:  # Porta aperta
                     try:
                         servizio = socket.getservbyport(porta)
-                    except OSError:
+                    except OSError:  # Se il servizio non è conosciuto
                         servizio = "Servizio sconosciuto"
                     servizi_attivi[porta] = servizio
                     self.logger.info(f"Porta aperta trovata: {porta} ({servizio})")
@@ -108,3 +108,6 @@ class ScannerRete:
 
         # Log del totale dei dispositivi trovati
         self.logger.info(f"Numero totale di dispositivi rilevati: {len(dispositivi)}")
+        if len(dispositivi) == 0:
+            self.logger.warning("Nessun dispositivo trovato nella rete.")
+
