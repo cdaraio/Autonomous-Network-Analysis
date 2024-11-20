@@ -66,3 +66,5 @@ plt.savefig("detailed_network_scan_diagram_with_ports.png")
 plt.close()
 
 print("Analisi dettagliata completata e diagramma salvato come 'detailed_network_scan_diagram_with_ports.png'")
+
+
