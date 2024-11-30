@@ -1,10 +1,10 @@
 from typing import List, Dict, Optional
 
 class Dispositivo:
-    def __init__(self, ip, mac, so, nome_host, tempo_risposta, ttl, stato, servizi_attivi=None):
+    def __init__(self, ip, mac, tipologia, so, nome_host, tempo_risposta, ttl, stato, servizi_attivi=None):
         self.ip = ip
         self.mac = mac
-        #self.tipo_dispositivo = tipo_dispositivo
+        self.tipologia = tipologia
         self.so = so
         self.nome_host = nome_host
         self.tempo_risposta = tempo_risposta
@@ -63,6 +63,14 @@ class Dispositivo:
     def ttl(self):
         return self._ttl
 
+    @property
+    def tipologia(self):
+        return self._tipologia
+
+    @tipologia.setter
+    def tipologia(self, value):
+        self._tipologia = value
+
     @ttl.setter
     def ttl(self, value):
         self._ttl = value
@@ -90,6 +98,6 @@ class Dispositivo:
     # Metodo __str__ per rappresentazione leggibile
     def __str__(self):
         return (f"Dispositivo(ip={self._ip}, mac={self._mac}, "
-                f"so={self._so}, nome_host={self._nome_host}, tempo_risposta={self._tempo_risposta}, "
+                f"so={self._so}, nome_host={self._nome_host}, nome_host={self._nome_host}, tipologia={self.tipologia}, tempo_risposta={self._tempo_risposta}, "
                 f"ttl={self._ttl}, stato={self._stato}, "
                 f"servizi_attivi={self._servizi_attivi})")

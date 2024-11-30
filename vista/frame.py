@@ -1,35 +1,65 @@
 import tkinter as tk
-import threading
+from tkinter import Menu
 
-class VistaPrincipale(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master = master
-        self.create_widgets()
 
-    def create_widgets(self):
-        self.label = tk.Label(self, text="Benvenuto nella Scansione!")
-        self.label.pack(padx=10, pady=10)  # Mostra la label
+class MainFrame(tk.Tk):
+    def __init__(self, title="Network Topology Mapper", window_width=600, window_height=500):
+        super().__init__()
 
-        self.bottone = tk.Button(self, text="Avvia Scansione", command=self.avvia_scansione)
-        self.bottone.pack(padx=10, pady=10)  # Mostra il bottone
+        # Titolo della finestra
+        self.title(title)
 
-    def avvia_scansione(self):
-        self.label.config(text="Scansione Iniziata...")
-        threading.Thread(target=self.scansione_rilevamento).start()
+        # Dimensioni della finestra
+        self.window_width = window_width
+        self.window_height = window_height
 
-    def scansione_rilevamento(self):
-        # Simula un processo di scansione lento
-        import time
-        time.sleep(5)  # Simula un'attività che richiede tempo
-        self.label.config(text="Scansione Completa!")
+        # Centra la finestra
+        self.center_window()
 
-def run_app():
-    root = tk.Tk()  # Crea la finestra principale
-    root.title("Network Topology Mapper")
-    app = VistaPrincipale(master=root)  # Crea l'istanza della vista
-    app.pack()  # Aggiungi la vista al contenitore principale
-    root.mainloop()  # Avvia il loop dell'interfaccia grafica
+        # Porta la finestra in primo piano
+        self.attributes("-topmost", True)
+        self.lift()
+        self.after(100, lambda: self.attributes("-topmost", False))
 
-if __name__ == "__main__":
-    run_app()
+        # Crea la barra dei menu
+        self.create_menu_bar()
+
+    def center_window(self):
+        """Centra la finestra sullo schermo."""
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        position_top = int(screen_height / 2 - self.window_height / 2)
+        position_right = int(screen_width / 2 - self.window_width / 2)
+
+        self.geometry(f'{self.window_width}x{self.window_height}+{position_right}+{position_top}')
+
+    def create_menu_bar(self):
+        """Crea la barra dei menu."""
+        menu_bar = Menu(self)
+
+        # Menu File
+        file_menu = Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Nuovo")
+        file_menu.add_command(label="Apri...")
+        file_menu.add_separator()
+        file_menu.add_command(label="Esci", command=self.quit)
+        menu_bar.add_cascade(label="File", menu=file_menu)
+
+        # Menu Aiuto
+        help_menu = Menu(menu_bar, tearoff=0)
+        help_menu.add_command(label="Guida")
+        help_menu.add_command(label="Informazioni su...")
+        menu_bar.add_cascade(label="Aiuto", menu=help_menu)
+
+        # Imposta la barra dei menu nella finestra principale
+        self.config(menu=menu_bar)
+
+    def set_view(self, view_instance):
+        """Sostituisce la vista principale passata come parametro."""
+        if hasattr(self, 'current_view'):
+            self.current_view.destroy()  # Rimuove la vista corrente se esiste
+
+        # Aggiunge la nuova vista all'interno del frame
+        self.current_view = view_instance
+        self.current_view.pack(fill="both", expand=True)
