@@ -1,9 +1,12 @@
 import tkinter as tk
-from tkinter import Menu
+from tkinter import Menu, messagebox
 
 
 class MainFrame(tk.Tk):
-    def __init__(self, title="Network Topology Mapper", window_width=600, window_height=500):
+    def __init__(self, controllo_frame, title="Network Topology Mapper", window_width=1200, window_height=600):
+        """
+        :param controllo_frame: Istanza di ControlloFrame per gestire le azioni.
+        """
         super().__init__()
 
         # Titolo della finestra
@@ -12,6 +15,7 @@ class MainFrame(tk.Tk):
         # Dimensioni della finestra
         self.window_width = window_width
         self.window_height = window_height
+        self.controllo_frame = controllo_frame  # Associazione al controllo
 
         # Centra la finestra
         self.center_window()
@@ -40,16 +44,13 @@ class MainFrame(tk.Tk):
 
         # Menu File
         file_menu = Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Nuovo")
-        file_menu.add_command(label="Apri...")
-        file_menu.add_separator()
         file_menu.add_command(label="Esci", command=self.quit)
         menu_bar.add_cascade(label="File", menu=file_menu)
 
         # Menu Aiuto
         help_menu = Menu(menu_bar, tearoff=0)
-        help_menu.add_command(label="Guida")
-        help_menu.add_command(label="Informazioni su...")
+        help_menu.add_command(label="Guida", command=self.controllo_frame.mostra_guida)
+        help_menu.add_command(label="Informazioni su...", command=self.controllo_frame.mostra_informazioni)
         menu_bar.add_cascade(label="Aiuto", menu=help_menu)
 
         # Imposta la barra dei menu nella finestra principale

@@ -7,26 +7,28 @@ class VistaPrincipale(tk.Frame):
         self.master = master
         self.controllo_principale = controllo_principale  # Passiamo il controllo principale
         self.modello = modello  # Passiamo il riferimento al modello
-        self.create_widgets()
+        self.create_widgets(master)
 
-    def create_widgets(self):
+    def create_widgets(self, master):
         # Bottone per avviare la scansione
-        self.label = tk.Label(self, text="Benvenuto nella Scansione!")
+        self.label = tk.Label(master, text="Benvenuto nella Scansione!")
         self.label.pack(padx=10, pady=10)
+
         if self.controllo_principale:
-            self.bottone = tk.Button(self, text="Avvia Scansione",
+            self.bottone = tk.Button(master, text="Avvia Scansione",
                                      command=self.controllo_principale.azione_avvia_scansione)
             self.bottone.pack(pady=10)  # Aggiunto padding per separare il bottone dalla tabella
         else:
             raise ValueError("controllo_principale non è stato inizializzato correttamente!")
 
         # Frame per contenere Treeview e Scrollbar
-        frame_tabella = tk.Frame(self)
+        frame_tabella = tk.Frame(master)
         frame_tabella.pack(fill="both", expand=True, padx=10, pady=10)  # Occupa tutto lo spazio disponibile
 
         # Treeview per visualizzare i dispositivi
         self.tree = ttk.Treeview(frame_tabella, columns=(
-            "IP", "MAC", "Sistema Operativo", "TTL", "Tempo di Risposta", "Servizi Attivi", "Tipologia"), show="headings")
+            "IP", "MAC", "Sistema Operativo", "TTL", "Tempo di Risposta", "Servizi Attivi", "Tipologia"),
+                                 show="headings")
 
         # Definiamo le colonne
         colonne = ["IP", "MAC", "Sistema Operativo", "TTL", "Tempo di Risposta", "Servizi Attivi", "Tipologia"]
@@ -42,17 +44,17 @@ class VistaPrincipale(tk.Frame):
         scrollbar_x = ttk.Scrollbar(frame_tabella, orient="horizontal", command=self.tree.xview)
         self.tree.configure(xscrollcommand=scrollbar_x.set)
 
-        # Posizionamento con grid()
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        scrollbar_y.grid(row=0, column=1, sticky="ns")
-        scrollbar_x.grid(row=1, column=0, sticky="ew")
+        # Posizionamento con pack()
+        self.tree.pack(fill="both", expand=True)
+        scrollbar_y.pack(side="right", fill="y")
+        scrollbar_x.pack(side="bottom", fill="x")
 
-        # Configurazione della griglia per espandere il frame
-        frame_tabella.rowconfigure(0, weight=1)
-        frame_tabella.columnconfigure(0, weight=1)
+        # Label per "Subnet Trovate" e "Numero Dispositivi Trovati"
+        self.label_subnet = tk.Label(master, text="")
+        self.label_subnet.pack(pady=5)
 
-        # Assicurarsi che il frame principale si espanda
-        self.pack(fill="both", expand=True)
+        self.label_dispositivi = tk.Label(master, text="")
+        self.label_dispositivi.pack(pady=5)
 
     def aggiorna_stato(self, stato):
         """Aggiorna lo stato nella label."""
@@ -80,3 +82,7 @@ class VistaPrincipale(tk.Frame):
         # Aggiungi ogni dispositivo alla tabella
         for dispositivo in lista_dispositivi:
             self.aggiorna_risultato(dispositivo)
+
+    def aggiorna_info(self):
+        # Aggiornamento dei valori nelle label dopo la scansione
+        self.label_dispositivi.config(text=f"Numero Dispositivi Trovati: {len(self.modello.ottieni_bean('DISPOSITIVI'))}")

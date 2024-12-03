@@ -1,28 +1,36 @@
+from tkinter import messagebox
+
+from modello.costanti import Costanti
+
+
 class ControlloFrame:
     def __init__(self):
-       self._modello = None  # Esempio di riferimento al modello (da inizializzare successivamente)
+        self.nome_app = Costanti.NOME_APP
+        self.versione = Costanti.VERSIONE
+        self.autori = Costanti.AUTORI
+        self.descrizione = Costanti.DESCRIZIONE_APP
 
-    def inizializza(self, modello):
-        """Inizializza il controller con un riferimento al modello."""
-        self._modello = modello
-        print("ControlloPrincipale: inizializzazione completata.")
+    def mostra_guida(self):
+        guida = (
+              "Benvenuto nella guida di " + Costanti.NOME_APP + "!\n\n"
+        "Grazie per aver scelto " + Costanti.NOME_APP + ",l’app per scansionare e mappare facilmente la tua rete.\n"
+        "Ecco come iniziare:\n\n"
+        "1. Avviare una scansione:\n"
+        "   Dalla schermata principale, premi il pulsante 'Avvia Scansione' per iniziare l’analisi della rete.\n\n"
+        "2. Visualizzare i risultati:\n"
+        "   Una volta completata la scansione, i risultati verranno mostrati nella finestra principale dell’app.\n\n"
+        "3. Accedere alla guida:\n"
+        "   Usa il menu 'Aiuto' per consultare ulteriori istruzioni o ottenere informazioni sull’applicazione.\n\n"
+        "Per maggiori dettagli, visita la documentazione ufficiale o contatta il nostro supporto tecnico.\n\n"
+        )
+        messagebox.showinfo("Guida", guida)
 
-    def esegui_azione(self, azione):
-        """Metodo per eseguire una certa azione. Può essere esteso per azioni specifiche."""
-        print(f"Eseguendo azione: {azione}")
-        # Aggiungere la logica per l'azione
-        # Ad esempio, il controller può modificare il modello o aggiornare la vista
-
-    def aggiorna_vista(self):
-        """Metodo per aggiornare la vista o il modello in base alle modifiche."""
-        if self._modello:
-            # Logica per aggiornare la vista tramite il modello
-            print("Aggiornamento della vista in base ai cambiamenti nel modello.")
-        else:
-            print("Errore: modello non inizializzato.")
-
-    def gestisci_evento(self, evento):
-        """Gestisce un evento specifico dall'interfaccia utente o da un altro componente."""
-        print(f"Gestendo evento: {evento}")
-        # Logica di gestione evento (ad esempio, risposta a un clic del pulsante)
-        self.esegui_azione(evento)
+    def mostra_informazioni(self):
+        informazioni = (
+            f"{self.nome_app}\n"
+            f"Versione: {self.versione}\n\n"
+            "Autori:\n" + "\n".join(self.autori) + "\n\n"
+            f"Descrizione:\n{self.descrizione}\n\n"
+            "Grazie per aver scelto la nostra applicazione!"
+        )
+        messagebox.showinfo("Informazioni su", informazioni)

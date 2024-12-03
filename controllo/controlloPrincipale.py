@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+
+from modello.costanti import Costanti
 from modello.scanner import ScannerRete
 import threading
 import logging
@@ -35,12 +37,13 @@ class ControlloPrincipale:
             try:
                 self.logger.debug("Avvio della scansione...")
                 dispositivi = self.scanner.scan()
-                self.modello.aggiungi_bean("DISPOSITIVI", dispositivi)
+                self.modello.aggiungi_bean(Costanti.DISPOSITIVI, dispositivi)
                 self.logger.debug(f"Dispositivi aggiunti: {dispositivi}")
 
                 # Aggiorna la vista dopo la scansione
                 if self.vista_principale:
                     self.vista_principale.carica_dispositivi()
+                    self.vista_principale.aggiorna_info()
             finally:
                 # Chiude la finestra di dialogo dopo la scansione
                 dialog.destroy()

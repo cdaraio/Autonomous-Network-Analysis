@@ -1,6 +1,7 @@
 import tkinter as tk
 import logging
 
+from controllo.controlloFrame import ControlloFrame
 from modello.modello import Modello
 from vista.vista_principale import VistaPrincipale
 from vista.frame import MainFrame
@@ -29,6 +30,7 @@ class Application:
         self.logger = logging.getLogger(__name__)  # Logger inizializzato qui
         self.vista_principale = None
         self.controllo_principale = None
+        self.controllo_frame= ControlloFrame()
         self.modello = Modello()
 
     def inizializza(self):
@@ -36,7 +38,11 @@ class Application:
         """Inizializzazione dei componenti dell'applicazione."""
 
         # Crea la finestra principale
-        self.frame = MainFrame()
+        self.frame = MainFrame(controllo_frame=self.controllo_frame)
+
+        logo = tk.PhotoImage(file="src/images/logo.png")  # Usa il formato che preferisci (es. PNG, ICO, etc.)
+        self.frame.iconphoto(True, logo)  # Imposta l'icona sulla finestra principale
+
         # Crea il ControlloPrincipale senza la vista
         self.controllo_principale = ControlloPrincipale(self.modello, vista_principale=None, logger=self.logger)
 
