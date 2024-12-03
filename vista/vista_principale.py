@@ -21,33 +21,32 @@ class VistaPrincipale(tk.Frame):
         else:
             raise ValueError("controllo_principale non è stato inizializzato correttamente!")
 
-        # Frame per contenere Treeview e Scrollbar
-        frame_tabella = tk.Frame(master)
-        frame_tabella.pack(fill="both", expand=True, padx=10, pady=10)  # Occupa tutto lo spazio disponibile
+        # Frame per Treeview e scrollbar
+        frame_tree = ttk.Frame(master)
+        frame_tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Aggiunge scrollbar verticali e orizzontali
+        self.scrollbar_y = ttk.Scrollbar(frame_tree, orient="vertical")
+        self.scrollbar_y.pack(side="right", fill="y")
+
+        self.scrollbar_x = ttk.Scrollbar(frame_tree, orient="horizontal")
+        self.scrollbar_x.pack(side="bottom", fill="x")
 
         # Treeview per visualizzare i dispositivi
-        self.tree = ttk.Treeview(frame_tabella, columns=(
-            "IP", "MAC", "Sistema Operativo", "TTL", "Tempo di Risposta", "Servizi Attivi", "Tipologia"),
-                                 show="headings")
+        colonne = ["IP", "MAC", "Sistema Operativo", "TTL", "Tempo di Risposta", "Servizi Attivi", "Tipologia"]
+        self.tree = ttk.Treeview(frame_tree, columns=colonne, show="headings",
+                                 yscrollcommand=self.scrollbar_y.set, xscrollcommand=self.scrollbar_x.set)
+
+        # Associa le scrollbar al Treeview
+        self.scrollbar_y.config(command=self.tree.yview)
+        self.scrollbar_x.config(command=self.tree.xview)
 
         # Definiamo le colonne
-        colonne = ["IP", "MAC", "Sistema Operativo", "TTL", "Tempo di Risposta", "Servizi Attivi", "Tipologia"]
         for col in colonne:
             self.tree.heading(col, text=col)
-            self.tree.column(col, anchor="center", width=150, stretch=True)  # Stretch rende le colonne adattive
+            self.tree.column(col, anchor="center", width=150, minwidth=100)  # Larghezza fissa, minwidth per scroll
 
-        # Scrollbar verticale
-        scrollbar_y = ttk.Scrollbar(frame_tabella, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar_y.set)
-
-        # Scrollbar orizzontale
-        scrollbar_x = ttk.Scrollbar(frame_tabella, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(xscrollcommand=scrollbar_x.set)
-
-        # Posizionamento con pack()
         self.tree.pack(fill="both", expand=True)
-        scrollbar_y.pack(side="right", fill="y")
-        scrollbar_x.pack(side="bottom", fill="x")
 
         # Label per "Subnet Trovate" e "Numero Dispositivi Trovati"
         self.label_subnet = tk.Label(master, text="")
@@ -85,4 +84,6 @@ class VistaPrincipale(tk.Frame):
 
     def aggiorna_info(self):
         # Aggiornamento dei valori nelle label dopo la scansione
-        self.label_dispositivi.config(text=f"Numero Dispositivi Trovati: {len(self.modello.ottieni_bean('DISPOSITIVI'))}")
+        self.label_dispositivi.config(
+            text=f"Numero Dispositivi Trovati: {len(self.modello.ottieni_bean('DISPOSITIVI'))}"
+        )
