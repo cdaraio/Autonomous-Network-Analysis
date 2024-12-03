@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import Menu, messagebox
-
+from tkinter import PhotoImage  # Per caricare immagini
 
 class MainFrame(tk.Tk):
     def __init__(self, controllo_frame, title="Network Topology Mapper", window_width=1200, window_height=600):

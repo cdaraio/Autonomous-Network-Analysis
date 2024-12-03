@@ -1,5 +1,7 @@
 import tkinter as tk
+import platform
 import logging
+import os
 
 from controllo.controlloFrame import ControlloFrame
 from modello.modello import Modello
@@ -30,7 +32,7 @@ class Application:
         self.logger = logging.getLogger(__name__)  # Logger inizializzato qui
         self.vista_principale = None
         self.controllo_principale = None
-        self.controllo_frame= ControlloFrame()
+        self.controllo_frame = ControlloFrame()
         self.modello = Modello()
 
     def inizializza(self):
@@ -40,7 +42,8 @@ class Application:
         # Crea la finestra principale
         self.frame = MainFrame(controllo_frame=self.controllo_frame)
 
-        logo = tk.PhotoImage(file="src/images/logo.png")  # Usa il formato che preferisci (es. PNG, ICO, etc.)
+        # Imposta l'icona in base al sistema operativo
+        logo = self.get_logo_so()  # Ottieni il logo in base al sistema operativo
         self.frame.iconphoto(True, logo)  # Imposta l'icona sulla finestra principale
 
         # Crea il ControlloPrincipale senza la vista
@@ -48,11 +51,26 @@ class Application:
 
         # Crea la VistaPrincipale e passa il ControlloPrincipale
         self.vista_principale = VistaPrincipale(self.frame, controllo_principale=self.controllo_principale,
-                                                modello=self.modello)
+                                                 modello=self.modello)
         # Aggiornamento del ControlloPrincipale con la vista
         self.controllo_principale.vista_principale = self.vista_principale
         self.frame.set_view(self.vista_principale)  # Imposta la vista principale
         self.frame.mainloop()
+
+    def get_logo_so(self):
+        """Restituisce l'icona giusta a seconda del sistema operativo."""
+        system = platform.system()
+
+        if system == "Darwin":  # macOS
+            logo_path = os.path.abspath("src/images/logo.png")
+        elif system == "Windows":  # Windows
+            logo_path = os.path.abspath("src/images/logo.ico")
+        elif system == "Linux":  # Linux
+            logo_path = os.path.abspath("src/images/logo.xpm")
+        else:
+            # Default fallback
+            logo_path = os.path.abspath("src/images/logo.png")
+        return tk.PhotoImage(file=logo_path)
 
     @staticmethod
     def main():

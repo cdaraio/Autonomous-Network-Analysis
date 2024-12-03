@@ -26,4 +26,5 @@ class Modello:
 
     def log_mappa_lunghezza(self):
         """Logga la lunghezza del dizionario _beans."""
-        self.logger.info(f"Lunghezza della mappa dopo l'aggiunta: {len(self._beans)}")
+        self.logger.info(f"Lunghezza della mappa dopo l'aggiunta: {(self._beans)}")
+
