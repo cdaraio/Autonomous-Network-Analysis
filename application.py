@@ -2,6 +2,7 @@ import tkinter as tk
 import platform
 import logging
 import os
+from PIL import Image, ImageTk  # Importa Image e ImageTk da Pillow
 
 from controllo.controlloFrame import ControlloFrame
 from modello.modello import Modello
@@ -43,7 +44,7 @@ class Application:
         self.frame = MainFrame(controllo_frame=self.controllo_frame)
 
         # Imposta l'icona in base al sistema operativo
-        logo = self.get_logo_so()  # Ottieni il logo in base al sistema operativo
+        logo = self.get_logo_so()  # Ottieni l'icona in base al sistema operativo
         self.frame.iconphoto(True, logo)  # Imposta l'icona sulla finestra principale
 
         # Crea il ControlloPrincipale senza la vista
@@ -58,8 +59,8 @@ class Application:
         self.frame.mainloop()
 
     def get_logo_so(self):
-        """Restituisce l'icona giusta a seconda del sistema operativo."""
         system = platform.system()
+        logo_path = ""
 
         if system == "Darwin":  # macOS
             logo_path = os.path.abspath("src/images/logo.png")
@@ -70,7 +71,13 @@ class Application:
         else:
             # Default fallback
             logo_path = os.path.abspath("src/images/logo.png")
-        return tk.PhotoImage(file=logo_path)
+
+        if not os.path.exists(logo_path):  # Verifica se il file esiste
+            self.logger.error(f"File dell'icona non trovato: {logo_path}")
+            raise FileNotFoundError(f"File dell'icona non trovato: {logo_path}")
+
+        img = Image.open(logo_path)
+        return ImageTk.PhotoImage(img)  # Usa ImageTk.PhotoImage per Tkinter
 
     @staticmethod
     def main():
