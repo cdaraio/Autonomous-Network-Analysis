@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from modello.costanti import Costanti
 from modello.scanner import ScannerRete
@@ -37,6 +37,13 @@ class ControlloPrincipale:
             try:
                 self.logger.debug("Avvio della scansione...")
                 dispositivi = self.scanner.scan()
+                if len(dispositivi) == 0:
+                        dialog.destroy()
+                        informazioni = (
+                               "Nessun dispostivo trovato sulla rete"
+                        )
+                        messagebox.showinfo("Risultato Scansione", informazioni)
+                        
                 self.modello.aggiungi_bean(Costanti.DISPOSITIVI, dispositivi)
                 self.logger.debug(f"Dispositivi aggiunti: {dispositivi}")
 
