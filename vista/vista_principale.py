@@ -20,7 +20,9 @@ class VistaPrincipale(tk.Frame):
             self.bottone.pack(pady=10)  # Aggiunto padding per separare il bottone dalla tabella
         else:
             raise ValueError("controllo_principale non è stato inizializzato correttamente!")
-
+        self.bottone = tk.Button(master, text="Visualizza Grafo",
+                                 command=self.controllo_principale.visualizza_grafo)
+        self.bottone.pack(pady=10)  # Aggiunto padding per separare il bottone dalla tabella
         # Frame per Treeview e scrollbar
         frame_tree = ttk.Frame(master)
         frame_tree.pack(fill="both", expand=True, padx=10, pady=10)
