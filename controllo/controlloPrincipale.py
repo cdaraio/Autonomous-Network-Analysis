@@ -14,6 +14,7 @@ from pyvis.network import Network
 from scapy.layers.inet import traceroute, UDP, IP
 from tkinterhtml import HtmlFrame
 from modello.costanti import Costanti
+from modello.enum_dispositivo import TipoDispositivo
 from modello.scanner import ScannerRete
 import threading
 import logging
@@ -33,6 +34,8 @@ class ControlloPrincipale:
         self.scanner = ScannerRete(self.logger)
         self.vista_principale = vista_principale
         self.lista_traceroute = []
+        self.scansione_interrotta = False
+        self.thread_scansione = None
         self.modello = modello
         # Inizializzazione ipinfo_handler
         access_token = "4614054d77f209"  #token API
@@ -50,29 +53,50 @@ class ControlloPrincipale:
                     self.vista_principale.mostra_messaggio_errore("Errore", "Il campo indirizzo non può essere vuoto.")
                     return
 
-                # Mostra la finestra di dialogo mentre il traceroute è in corso
-                self.vista_principale.mostra_finestra_dialogo("Traceroute in corso",
-                                                              f"Traceroute verso {target} in corso, attendere...")
+                # Crea una finestra di dialogo per il progresso
+                self.dialogo = tk.Toplevel(self.vista_principale)
+                self.dialogo.title("Traceroute in corso")
+                self.dialogo.grab_set()
+                # Disabilita la "X" di chiusura
+                self.dialogo.protocol("WM_DELETE_WINDOW", self.ignora_chiusura)
 
-                # Esegui la scansione del traceroute
-                self.scan_traceroute(target)
+                # Etichetta per il messaggio
+                etichetta = ttk.Label(self.dialogo, text=f"Traceroute verso {target} in corso...")
+                etichetta.pack(pady=10)
+
+                # Progress bar in modalità determinata (con intervallo da 0 a 100)
+                self.progress = ttk.Progressbar(self.dialogo, orient='horizontal', mode='determinate', length=250)
+                self.progress.pack(pady=10, padx=20, fill='x')
+                self.progress["value"] = 0  # Inizializza la progress bar a 0
+                self.progress["maximum"] = 100  # Imposta il valore massimo a 100
+
+                # Centra la finestra di dialogo con la progress bar
+                self.centra_progress(self.dialogo, 300, 100)
+
+                # Esegui il traceroute
+                self.scan_traceroute(target, self.progress)
 
                 # Una volta completata la scansione, chiudi la finestra di dialogo
-                self.vista_principale.chiudi_finestra_dialogo()
+                self.dialogo.destroy()
 
                 # Una volta che i dati sono stati aggiornati nel modello, aggiorna la tabella dei risultati
                 self.vista_principale.aggiorna_tabella_risultati()
 
             except Exception as e:
                 # Gestisci le eccezioni: chiudi la finestra di dialogo e mostra il messaggio di errore
-                self.vista_principale.chiudi_finestra_dialogo()  # Chiude la finestra di dialogo se c'è un errore
+                if self.dialogo:
+                    self.dialogo.destroy()  # Chiude la finestra di dialogo se c'è un errore
                 self.vista_principale.mostra_messaggio_errore("Errore", f"Si è verificato un errore: {e}")
 
         # Crea un thread per eseguire la scansione senza bloccare la GUI
         thread = threading.Thread(target=esegui_traceroute)
         thread.start()  # Avvia il thread
 
-    def scan_traceroute(self, target):
+    def ignora_chiusura(self):
+        """Non fare nulla quando l'utente prova a chiudere la finestra"""
+        pass
+
+    def scan_traceroute(self, target, progress_bar):
         if not target:
             self.vista_principale.mostra_messaggio_errore("Errore", "Il campo indirizzo non può essere vuoto.")
             return
@@ -85,8 +109,8 @@ class ControlloPrincipale:
                                                           "Indirizzo non valido o non trovato.")
             return
 
-        maxTTL = 64  # Numero massimo di hop
-        targetIP = target  # Imposta il target dell'indirizzo IP
+        maxTTL = 24  # Numero massimo di hop
+        targetIP = target
 
         self.lista_traceroute = []
 
@@ -100,7 +124,10 @@ class ControlloPrincipale:
                 # Invia il pacchetto e ricevi la risposta
                 reply = sr1(packet, timeout=5, verbose=0)  # Aumentato timeout
 
-                print(f"TTL[{ttl}]> ", end="")
+                # Calcola e aggiorna la progress bar
+                progresso = (ttl / maxTTL) * 100
+                progress_bar["value"] = progresso
+                self.dialogo.update_idletasks()  # Aggiorna la GUI
 
                 if reply is None:
                     # Nessuna risposta, continua con il prossimo TTL
@@ -141,7 +168,6 @@ class ControlloPrincipale:
                 return
 
             self.modello.aggiungi_bean("Traceroute", self.lista_traceroute)
-            self.vista_principale.aggiorna_tabella_risultati()
 
         except socket.gaierror as e:
             self.vista_principale.mostra_messaggio_errore("Errore di Connessione",
@@ -210,6 +236,15 @@ class ControlloPrincipale:
             spring_length=200,  # Lunghezza preferita degli archi
             spring_strength=0.02  # Forza elastica tra i nodi
         )
+
+        # Dizionario per le icone associate alle tipologie
+        icon_dict = {
+            'Router': "src/images/router.png",  # Percorso per l'icona del router
+            'Switch': "src/images/switch.png",  # Percorso per l'icona dello switch
+            'Client': "src/images/client.png",  # Percorso per l'icona del client
+            'Server': "src/images/server.png"  # Percorso per l'icona del server
+        }
+
         router = None
         for dispositivo in dispositivi:
             if dispositivo["Tipologia"] == 'Router':
@@ -220,22 +255,28 @@ class ControlloPrincipale:
         if router:
             # Se il router viene trovato, aggiungilo come nodo centrale
             net.add_node(router["IP"], label=f"Router\nIP: {router['IP']}\nMAC: {router['MAC']}", color="red", size=30,
-                         icon="fa fa-cogs")
+                         image=icon_dict['Router'], shape="image")  # Usa l'immagine per il router
 
             # Aggiungi gli altri dispositivi come nodi e collegali al router
             for dispositivo in dispositivi:
                 if dispositivo != router:  # Escludi il router
-                    net.add_node(dispositivo["IP"],
-                                 label=f"IP: {dispositivo['IP']}\nMAC: {dispositivo['MAC']}\nSO: {dispositivo['Sistema Operativo']}",
-                                 color="lightblue", size=20, icon="fa fa-desktop")
+                    net.add_node(
+                        dispositivo["IP"],
+                        label=f"IP: {dispositivo['IP']}\nMAC: {dispositivo['MAC']}\nSO: {dispositivo['Sistema Operativo']}",
+                        color="lightblue", size=20, image=icon_dict[dispositivo["Tipologia"]], shape="image"
+                        # Usa l'immagine basata sulla tipologia
+                    )
                     net.add_edge(router["IP"], dispositivo["IP"])  # Collegamento al router
 
         else:
             # Se il router non è stato trovato, aggiungi i nodi e collega tutti i dispositivi tra loro
             for dispositivo in dispositivi:
-                net.add_node(dispositivo["IP"],
-                             label=f"IP: {dispositivo['IP']}\nMAC: {dispositivo['MAC']}\nSO: {dispositivo['Sistema Operativo']}",
-                             color="lightgreen", size=20, icon="fa fa-desktop")
+                net.add_node(
+                    dispositivo["IP"],
+                    label=f"IP: {dispositivo['IP']}\nMAC: {dispositivo['MAC']}\nSO: {dispositivo['Sistema Operativo']}",
+                    color="lightgreen", size=20, image=icon_dict[dispositivo["Tipologia"]], shape="image"
+                    # Usa l'immagine basata sulla tipologia
+                )
 
             # Collega tutti i dispositivi tra loro
             for i in range(len(dispositivi)):
@@ -249,20 +290,39 @@ class ControlloPrincipale:
         return output_path
 
     def azione_avvia_scansione(self):
-        # Crea la finestra di dialogo modale
+        # Crea la finestra di dialogo con una progress bar
         titolo = "Scansione in corso"
-        etichetta = "Scansione in corso..."
-        self.vista_principale.mostra_finestra_dialogo(titolo,etichetta)
+        self.dialogo = tk.Toplevel(self.vista_principale)
+        self.dialogo.title(titolo)
+
+        # Disabilita la "X" di chiusura
+        self.dialogo.protocol("WM_DELETE_WINDOW", self.ignora_chiusura)
+
+        # Etichetta per il messaggio
+        etichetta = ttk.Label(self.dialogo, text="Scansione in corso...")
+        etichetta.pack(pady=10)
+
+        # Progress bar in modalità determinata (con intervallo da 0 a 100)
+        self.progress = ttk.Progressbar(self.dialogo, orient='horizontal', mode='determinate', length=250)
+        self.progress.pack(pady=10, padx=20, fill='x')
+        self.progress["value"] = 0  # Inizializza la progress bar a 0
+        self.progress["maximum"] = 100  # Imposta il valore massimo a 100
+
+        # Centra la finestra di dialogo con la progress bar
+        self.centra_progress(self.dialogo, 300, 100)
+
         # Funzione per avviare la scansione in un thread separato
         def esegui_scansione():
             try:
                 self.logger.debug("Avvio della scansione...")
+
+                # Esegui la scansione e ottieni la lista dei dispositivi
                 dispositivi = self.scanner.scan()
-                if len(dispositivi) == 0:
-                    self.vista_principale.chiudi_finestra_dialogo()
-                    informazioni = (
-                        "Nessun dispositivo trovato sulla rete"
-                    )
+                numero_dispositivi = len(dispositivi)
+
+                # Se non ci sono dispositivi, mostra un messaggio e chiudi la finestra
+                if numero_dispositivi == 0:
+                    informazioni = "Nessun dispositivo trovato sulla rete"
                     messagebox.showinfo("Risultato Scansione", informazioni)
                 else:
                     self.modello.aggiungi_bean(Costanti.DISPOSITIVI, dispositivi)
@@ -272,10 +332,31 @@ class ControlloPrincipale:
                     if self.vista_principale:
                         self.vista_principale.carica_dispositivi()
                         self.vista_principale.aggiorna_info()
+
+                # Simulazione del progresso, qui incrementiamo la progress bar in base al numero di dispositivi
+                for i in range(1, numero_dispositivi + 1):
+                    # Calcola la percentuale di progresso
+                    progresso = (i / numero_dispositivi) * 100
+                    self.progress["value"] = progresso
+                    self.dialogo.update_idletasks()  # Aggiorna la GUI
+                    threading.Event().wait(0.1)  # Aggiungi un piccolo ritardo per aggiornare la progress bar
+
             finally:
-                # Chiude la finestra di dialogo dopo la scansione
-                self.vista_principale.chiudi_finestra_dialogo()
+                # Ferma la progress bar e chiudi la finestra di dialogo
+                self.progress["value"] = 100
+                self.dialogo.destroy()
 
         # Avvia la scansione in un thread separato per non bloccare l'interfaccia grafica
         threading.Thread(target=esegui_scansione, daemon=True).start()
 
+    def centra_progress(self, finestra, larghezza, altezza):
+        """Centra la finestra rispetto alla finestra principale."""
+        finestra_principale = self.vista_principale.master # La finestra principale
+        finestra_principale.update_idletasks()  # Aggiorna le dimensioni
+
+        # Calcola la posizione
+        x_pos = finestra_principale.winfo_x() + (finestra_principale.winfo_width() // 2) - (larghezza // 2)
+        y_pos = finestra_principale.winfo_y() + (finestra_principale.winfo_height() // 2) - (altezza // 2)
+
+        # Imposta la geometria della finestra
+        finestra.geometry(f"{larghezza}x{altezza}+{x_pos}+{y_pos}")
