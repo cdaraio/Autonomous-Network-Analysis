@@ -37,7 +37,6 @@ class ScannerRete:
                 self.logger.info(f"Subnet trovate: {self.subnet_trovate}")
             else:
                 self.logger.info("Nessuna subnet aggiuntiva trovata.")
-
             return dispositivi  # Restituisci la lista dei dispositivi rilevati
 
         except Exception as e:

@@ -12,37 +12,41 @@ class VistaPrincipale(tk.Frame):
         self.widgets = []  # Lista per tracciare i widget
         self.colonne_result = ["Hop", "Indirizzo IP", "Tempo di Risposta", "Hostname", "Regione"]
         self.create_widgets(master)
+        self.mostra_componenti_traceroute()
         self.dialog = None
 
     def create_widgets(self, master):
-        # Bottone per avviare la scansione
-        # Frame per input traceroute
+        # Titolo centrato
+        titolo_label = tk.Label(master, text="Scansione Rete", font=("Tahoma", 16))
+        titolo_label.pack(pady=2)  # Padding per dare spazio sopra e sotto il titolo
+        # Frame per i bottoni di scansione
         scansione_frame = tk.Frame(self.master)
-        scansione_frame.pack(pady=2, fill="x")  # Ridotto il padding superiore
+        scansione_frame.pack(pady=10)  # Spaziatura uniforme attorno al frame
         scansione_frame.widget_name = "scansione_frame"
         self.widgets.append(scansione_frame)
-        self.label = tk.Label(master, text="Benvenuto nella Scansione!")
-        self.label.pack(padx=10, pady=10)
-        self.label.widget_name = "label"
-        self.widgets.append(self.label)
+
+        # Bottone per avviare la scansione
         if self.controllo_principale:
-            self.bottone_scansione = tk.Button(master, text="Avvia Scansione",
-                                     command=self.controllo_principale.azione_avvia_scansione)
-            self.bottone_scansione.pack(pady=10)  # Aggiunto padding per separare il bottone dalla tabella
+            self.bottone_scansione = tk.Button(
+                scansione_frame, text="Avvia Scansione",
+                command=self.controllo_principale.azione_avvia_scansione
+            )
+            self.bottone_scansione.pack(side="left", padx=5)  # Margine laterale tra i bottoni
             self.bottone_scansione.widget_name = "bottone_scansione"
             self.widgets.append(self.bottone_scansione)
         else:
             raise ValueError("controllo_principale non è stato inizializzato correttamente!")
-        self.bottone_grafo = tk.Button(master, text="Visualizza Grafo",
-                                 command=self.controllo_principale.visualizza_grafo)
-        self.bottone_grafo.pack(pady=10)  # Aggiunto padding per separare il bottone dalla tabella
+
+        # Bottone per visualizzare il grafo
+        self.bottone_grafo = tk.Button(
+            scansione_frame, text="Visualizza Grafo",
+            command=self.controllo_principale.visualizza_grafo
+        )
+        self.bottone_grafo.pack(side="left", padx=5)  # Margine laterale tra i bottoni
         self.bottone_grafo.widget_name = "bottone_grafo"
         self.widgets.append(self.bottone_grafo)
-        self.bottone_traceroute = tk.Button(master, text="Esegui Traceroute",
-                                            command=self.controllo_principale.azione_bottone_traceroute)
-        self.bottone_traceroute.pack(pady=10)  # Aggiunto padding per separare il bottone dalla tabella
-        self.bottone_traceroute.widget_name = "bottone_traceroute"
-        self.widgets.append(self.bottone_traceroute)
+
+
         # Frame per Treeview e scrollbar
         tabella = ttk.Frame(master)
         tabella.pack(fill="both", expand=True, padx=10, pady=10)
@@ -77,12 +81,10 @@ class VistaPrincipale(tk.Frame):
 
         # Label per "Subnet Trovate" e "Numero Dispositivi Trovati"
         self.label_subnet = tk.Label(master, text="")
-        self.label_subnet.pack(pady=5)
         self.label_subnet.widget_name = "label_subnet"
         self.widgets.append(self.label_subnet)
 
         self.label_dispositivi = tk.Label(master, text="")
-        self.label_dispositivi.pack(pady=5)
         self.label_subnet.widget_name = "label_dispositivi"
         self.widgets.append(self.label_dispositivi)
 
@@ -125,7 +127,7 @@ class VistaPrincipale(tk.Frame):
             if hasattr(widget, 'widget_name'):
                 if widget.widget_name in ['tabella', 'bottone_traceroute', 'label_subnet'
                     , 'label_dispositivi']:
-                    widget.pack_forget()
+                    widget.destroy()
 
     def mostra_componenti_scansione(self):
         self.nascondi_componenti_traceroute()
@@ -150,6 +152,9 @@ class VistaPrincipale(tk.Frame):
                     widget.pack_forget()
 
     def mostra_componenti_traceroute(self):
+        # Titolo centrato
+        titolo_label = tk.Label(self.master, text="Traceroute", font=("Tahoma", 16))
+        titolo_label.pack(pady=2)  # Padding per dare spazio sopra e sotto il titolo
         # Frame per input traceroute
         traceroute_frame = tk.Frame(self.master)
         traceroute_frame.pack(pady=2, fill="x")  # Ridotto il padding superiore

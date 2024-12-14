@@ -16,7 +16,10 @@ class MainFrame(tk.Tk):
         self.window_width = window_width
         self.window_height = window_height
         self.controllo_frame = controllo_frame  # Associazione al controllo
-
+        self.larg_min = 700
+        self.alt_min = 600
+        # Imposta le dimensioni minime della finestra
+        self.minsize(self.larg_min, self.alt_min)
         # Centra la finestra
         self.center_window()
 

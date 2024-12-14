@@ -6,6 +6,8 @@ from tkinter import ttk, messagebox
 import socket
 import struct
 import time
+
+import ipinfo
 from scapy.all import *
 import argparse
 from pyvis.network import Network
@@ -32,12 +34,10 @@ class ControlloPrincipale:
         self.vista_principale = vista_principale
         self.lista_traceroute = []
         self.modello = modello
+        # Inizializzazione ipinfo_handler
+        access_token = "4614054d77f209"  #token API
+        self.ipinfo_handler = ipinfo.getHandler(access_token)
 
-    def azione_bottone_traceroute(self):
-        self.vista_principale.nascondi_componenti_scansione()
-        self.vista_principale.mostra_componenti_traceroute()
-        # Forza l'aggiornamento del layout dopo aver mostrato i componenti
-        self.vista_principale.update_idletasks()
     def avvia_traceroute(self, target):
         """Avvia la scansione e aggiorna la tabella dopo il completamento del thread."""
 
@@ -74,104 +74,85 @@ class ControlloPrincipale:
 
     def scan_traceroute(self, target):
         if not target:
-            # Se il campo dell'indirizzo è vuoto, mostra solo l'errore e ferma l'esecuzione
             self.vista_principale.mostra_messaggio_errore("Errore", "Il campo indirizzo non può essere vuoto.")
-            return  # Ferma l'esecuzione senza proseguire
+            return
 
         # Verifica se il target è risolvibile tramite DNS
         try:
-            socket.gethostbyname(target)  # Prova a risolvere l'IP dal nome di dominio
+            socket.gethostbyname(target)
         except socket.gaierror:
             self.vista_principale.mostra_messaggio_errore("Errore di Connessione",
                                                           "Indirizzo non valido o non trovato.")
-            return  # Ferma l'esecuzione se il nome non può essere risolto
+            return
 
-        maxTTL = 50  # Numero massimo di hop
+        maxTTL = 64  # Numero massimo di hop
         targetIP = target  # Imposta il target dell'indirizzo IP
 
-        # Inizializza la lista per i risultati
         self.lista_traceroute = []
 
         try:
             ttl = 1
             while ttl <= maxTTL:
-                # Crea il pacchetto con TTL crescente
                 ip_packet = IP(dst=targetIP, ttl=ttl)
-                udp_packet = UDP(dport=33434)  # Porta 33434 usata per traceroute
+                udp_packet = UDP(dport=33434)
                 packet = ip_packet / udp_packet
 
                 # Invia il pacchetto e ricevi la risposta
-                reply = sr1(packet, timeout=2, verbose=0)  # Timeout di 2 secondi
+                reply = sr1(packet, timeout=5, verbose=0)  # Aumentato timeout
 
-                # Stampa il TTL attuale
                 print(f"TTL[{ttl}]> ", end="")
 
                 if reply is None:
-                    # Nessuna risposta, stampa * * *
+                    # Nessuna risposta, continua con il prossimo TTL
                     print("* * *")
-                    break  # Fermati subito se non c'è risposta
+                    ttl += 1
+                    continue
                 elif reply.type == 3:
-                    # Risposta ricevuta e destinazione raggiunta
+                    # Destinazione raggiunta
                     print(f"{reply.src}")
                     ip = reply.src
-                    # Calcola il tempo di risposta
-                    tempo_ms = (reply.time - packet.sent_time) * 1000  # Calcolo del tempo in ms
+                    tempo_ms = (reply.time - packet.sent_time) * 1000
 
-                    # Risolvi l'hostname e la regione
                     hostname = self._get_hostname(ip) if ip else "N/D"
                     regione = self._get_regione(ip) if ip else "N/D"
 
-                    # Crea un oggetto Traceroute per questo hop
                     risultato = Traceroute(ttl, ip, hostname, tempo_ms, regione)
                     self.lista_traceroute.append(risultato)
 
-                    # Se il pacchetto ha raggiunto il target, termina il ciclo
                     if ip == targetIP:
                         break
-                    else:
-                        print("Nessuna risposta valida dopo 1 hop")
-                        break  # Se la risposta è al localhost (127.0.0.1) o non valida, fermati subito
                 else:
                     # Risposta intermedia
                     print(f"{reply.src}")
                     ip = reply.src
-                    # Calcola il tempo di risposta
-                    tempo_ms = (reply.time - packet.sent_time) * 1000  # Calcolo del tempo in ms
+                    tempo_ms = (reply.time - packet.sent_time) * 1000
 
-                    # Risolvi l'hostname e la regione
                     hostname = self._get_hostname(ip) if ip else "N/D"
                     regione = self._get_regione(ip) if ip else "N/D"
 
-                    # Crea un oggetto Traceroute per questo hop
                     risultato = Traceroute(ttl, ip, hostname, tempo_ms, regione)
                     self.lista_traceroute.append(risultato)
 
-                ttl += 1  # Incrementa il TTL per il prossimo hop
+                ttl += 1
+                time.sleep(1)  # Aggiunto ritardo di 1 secondo tra i pacchetti
 
             if not self.lista_traceroute:
-                # Se non ci sono risultati, mostra un errore
                 self.vista_principale.mostra_messaggio_errore("Errore", "Nessun risultato trovato per il traceroute.")
                 return
 
-            # Aggiungi la lista completa al modello, utilizzando la chiave 'Traceroute'
             self.modello.aggiungi_bean("Traceroute", self.lista_traceroute)
-
-            # Una volta che i dati sono stati aggiornati nel modello, aggiorna la tabella dei risultati
             self.vista_principale.aggiorna_tabella_risultati()
 
-        except socket.gaierror as e:  # Gestisci l'errore di nome non valido
+        except socket.gaierror as e:
             self.vista_principale.mostra_messaggio_errore("Errore di Connessione",
                                                           "Indirizzo non valido o non trovato.")
             print(f"Errore di connessione: {e}")
-            return  # Ferma l'esecuzione se si verifica un errore di rete
+            return
 
         except Exception as e:
-            # Gestisci altre eccezioni generiche
-            self.vista_principale.mostra_messaggio_errore(
-                "Errore durante il traceroute",
-                f"Si è verificato un errore: {e}"
-            )
-            return  # Ferma l'esecuzione se si verifica un errore generico
+            self.vista_principale.mostra_messaggio_errore("Errore durante il traceroute",
+                                                          f"Si è verificato un errore: {e}")
+            return
 
     def _get_hostname(self, ip):
         try:
@@ -181,12 +162,33 @@ class ControlloPrincipale:
             return "N/D"
 
     def _get_regione(self, ip):
+        """Restituisce la regione geografica per un dato IP utilizzando ipinfo_handler."""
+        import ipaddress
+
+        # Verifica se l'IP è valido
+        try:
+            ipaddress.ip_address(ip)
+        except ValueError:
+            print(f"IP non valido: {ip}")
+            return "N/D"
+
+        # Recupera i dettagli dal servizio ipinfo
         try:
             details = self.ipinfo_handler.getDetails(ip)
-            regione = details.region
-            return regione if regione else "Sconosciuta"
+
+            # Accedi direttamente alla proprietà 'region' dell'oggetto Details
+            regione = details.region if details.region else "Sconosciuta"  # Usa 'Sconosciuta' se la regione non è disponibile
+
+            return regione
+
+        except ConnectionError:
+            print(f"Errore di connessione durante la risoluzione della regione per IP {ip}")
+            return "N/D"
+        except KeyError:
+            print(f"Chiave 'region' mancante nei dettagli per IP {ip}")
+            return "Sconosciuta"
         except Exception as e:
-            print(f"Errore nella risoluzione della regione per IP {ip}: {e}")
+            print(f"Errore imprevisto per IP {ip}: {e}")
             return "N/D"
 
     def visualizza_grafo(self):
@@ -247,7 +249,6 @@ class ControlloPrincipale:
         return output_path
 
     def azione_avvia_scansione(self):
-        self.vista_principale.mostra_componenti_scansione()
         # Crea la finestra di dialogo modale
         titolo = "Scansione in corso"
         etichetta = "Scansione in corso..."
