@@ -9,7 +9,7 @@ from modello.subnet import Subnet
 
 class ScannerRete:
     def __init__(self, logger):
-        self.logger = logger  # Salviamo il logger per usarlo successivamente
+        self.logger = Application.get_instance().logger  # Salviamo il logger per usarlo successivamente
         self.subnet_trovate = []  # Lista per memorizzare gli oggetti Subnet
 
     def get_ip_range(self):
@@ -56,7 +56,7 @@ class ScannerRete:
         richiesta_completa = broadcast / arp_request
 
         # Invia la richiesta ARP e ottieni tutte le risposte
-        risposte = scapy.srp(richiesta_completa, timeout=3, verbose=False)[0]
+        risposte = scapy.srp(richiesta_completa, timeout=10, verbose=False)[0]
 
         # Log per mostrare il numero di risposte ARP ricevute
         self.logger.info(f"Numero di risposte ARP ricevute: {len(risposte)}")

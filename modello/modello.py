@@ -4,7 +4,6 @@ import logging
 class Modello:
     def __init__(self):
         self._beans: Dict[str, Any] = {}
-        # Configura il logger
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
