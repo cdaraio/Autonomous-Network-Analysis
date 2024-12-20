@@ -1,7 +1,6 @@
 import tkinter as tk
 import webview
 
-
 class ExtraGraphWindow(tk.Toplevel):
     def __init__(self, master, path_grafo):
         super().__init__(master)
@@ -21,24 +20,19 @@ class ExtraGraphWindow(tk.Toplevel):
 
     def show_graph(self):
         """Avvia WebView in modalità non bloccante"""
-        # Crea la finestra WebView (non bloccante)
         self.webview_window = webview.create_window("Grafo Interattivo", self.path_grafo)
-
-        # Avvia il webview in modalità non bloccante
-        webview.start(gui='qt', debug=True)  # Usare 'qt' per non bloccare Tkinter
+        webview.start(gui='qt', debug=True)
 
     def on_close_blocked(self):
-        """Blocca la chiusura tramite il tasto X"""
         print("Tentativo di chiusura tramite il tasto X ignorato.")
 
     def on_close(self):
-        """Chiudi la finestra"""
         if self.webview_window is not None:
             try:
                 print("Finestra WebView in chiusura...")
-                self.webview_window.destroy()  # Chiudi la finestra webview
-                self.webview_window = None  # Imposta a None per evitare errori successivi
+                self.webview_window.destroy()
+                self.webview_window = None
             except Exception as e:
                 print(f"Errore durante la chiusura della finestra WebView: {e}")
 
-        self.destroy()  # Chiudi la finestra principale (Tkinter)
+        self.destroy()

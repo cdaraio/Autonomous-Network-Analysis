@@ -1,4 +1,3 @@
-from typing import List, Dict, Optional
 
 class Dispositivo:
     def __init__(self, ip, mac, tipologia, so, nome_host, tempo_risposta, ttl, stato, servizi_attivi=None):
@@ -75,7 +74,6 @@ class Dispositivo:
     def ttl(self, value):
         self._ttl = value
 
-    # Proprietà per Stato
     @property
     def stato(self):
         return self._stato
@@ -84,7 +82,6 @@ class Dispositivo:
     def stato(self, value):
         self._stato = value
 
-    # Metodi per ServiziAttivi
     @property
     def servizi_attivi(self):
         return self._servizi_attivi
@@ -95,7 +92,6 @@ class Dispositivo:
     def get_servizio_attivo(self, chiave: int):
         return self._servizi_attivi.get(chiave)
 
-    # Metodo __str__ per rappresentazione leggibile
     def __str__(self):
         return (f"Dispositivo(ip={self._ip}, mac={self._mac}, "
                 f"so={self._so}, nome_host={self._nome_host}, nome_host={self._nome_host}, tipologia={self.tipologia}, tempo_risposta={self._tempo_risposta}, "

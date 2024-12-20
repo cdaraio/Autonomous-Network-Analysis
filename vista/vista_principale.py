@@ -1,4 +1,3 @@
-import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -7,19 +6,16 @@ class VistaPrincipale(tk.Frame):
     def __init__(self, master=None, controllo_principale=None, modello=None):
         super().__init__(master)
         self.master = master
-        self.controllo_principale = controllo_principale  # Passiamo il controllo principale
-        self.modello = modello  # Passiamo il riferimento al modello
-        self.widgets = []  # Lista per tracciare i widget
-        self.colonne_result = ["Hop", "Indirizzo IP", "Tempo di Risposta", "Hostname", "Regione"]
+        self.controllo_principale = controllo_principale
+        self.modello = modello
+        self.widgets = []
+        self.colonne_result = ["Hop", "Indirizzo IP", "Tempo di Risposta(ms)", "Hostname", "Regione"]
         self.create_widgets(master)
         self.mostra_componenti_traceroute()
         self.dialog = None
 
     def create_widgets(self, master):
-        # Titolo centrato
         titolo_label = tk.Label(master, text="Scansione Rete", font=("Tahoma", 16))
-        titolo_label.pack(pady=2)  # Padding per dare spazio sopra e sotto il titolo
-        # Frame per i bottoni di scansione
         scansione_frame = tk.Frame(self.master)
         scansione_frame.pack(pady=10)  # Spaziatura uniforme attorno al frame
         scansione_frame.widget_name = "scansione_frame"
@@ -46,13 +42,12 @@ class VistaPrincipale(tk.Frame):
         self.bottone_grafo.widget_name = "bottone_grafo"
         self.widgets.append(self.bottone_grafo)
 
-
         # Frame per Treeview e scrollbar
         tabella = ttk.Frame(master)
         tabella.pack(fill="both", expand=True, padx=10, pady=10)
         tabella.widget_name = "tabella"
         self.widgets.append(tabella)
-        # Aggiunge scrollbar verticali e orizzontali
+        # Scrollbar
         self.scrollbar_y_scansione = ttk.Scrollbar(tabella, orient="vertical")
         self.scrollbar_y_scansione.widget_name = "scrollbar_y_scansione"
         self.widgets.append(self.scrollbar_y_scansione)
@@ -72,28 +67,19 @@ class VistaPrincipale(tk.Frame):
         self.scrollbar_y_scansione.config(command=self.tree.yview)
         self.scrollbar_x_scansione.config(command=self.tree.xview)
 
-        # Definiamo le colonne
+        # Definizione colonne
         for col in colonne:
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor="center", width=150, minwidth=100)  # Larghezza fissa, minwidth per scroll
-
         self.tree.pack(fill="both", expand=True)
 
-        # Label per "Subnet Trovate" e "Numero Dispositivi Trovati"
-        self.label_subnet = tk.Label(master, text="")
-        self.label_subnet.widget_name = "label_subnet"
-        self.widgets.append(self.label_subnet)
+        # Label per "Numero Dispositivi Trovati"
 
         self.label_dispositivi = tk.Label(master, text="")
-        self.label_subnet.widget_name = "label_dispositivi"
         self.widgets.append(self.label_dispositivi)
-
-    def aggiorna_stato(self, stato):
-        """Aggiorna lo stato nella label."""
-        self.label.config(text=stato)
+        self.label_dispositivi.pack(side="top", padx=3)
 
     def aggiorna_risultato(self, dispositivo):
-        """Aggiungi un dispositivo alla tabella."""
         # Popola la tabella con i dati del dispositivo
         self.tree.insert("", "end", values=(
             dispositivo['IP'], dispositivo['MAC'], dispositivo['Sistema Operativo'], dispositivo['TTL'],
@@ -104,57 +90,20 @@ class VistaPrincipale(tk.Frame):
 
     def carica_dispositivi(self):
         """Carica i dispositivi nella tabella."""
-        # Ottieni i dispositivi dal modello
         lista_dispositivi = self.modello.ottieni_bean("DISPOSITIVI")
-
-        # Pulisce la tabella prima di caricare i nuovi dispositivi
         for item in self.tree.get_children():
             self.tree.delete(item)
-
-        # Aggiungi ogni dispositivo alla tabella
         for dispositivo in lista_dispositivi:
             self.aggiorna_risultato(dispositivo)
 
     def aggiorna_info(self):
-        # Aggiornamento dei valori nelle label dopo la scansione
         self.label_dispositivi.config(
             text=f"Numero Dispositivi Trovati: {len(self.modello.ottieni_bean('DISPOSITIVI'))}"
         )
 
-    def nascondi_componenti_scansione(self):
-        for widget in self.widgets:
-            # Verifica se il widget ha l'attributo 'widget_name' e se corrisponde ai nomi richiesti
-            if hasattr(widget, 'widget_name'):
-                if widget.widget_name in ['tabella', 'bottone_traceroute', 'label_subnet'
-                    , 'label_dispositivi']:
-                    widget.destroy()
-
-    def mostra_componenti_scansione(self):
-        self.nascondi_componenti_traceroute()
-        for widget in self.widgets:
-            # Verifica se il widget ha l'attributo 'widget_name' e se corrisponde ai nomi richiesti
-            if hasattr(widget, 'widget_name'):
-                if widget.widget_name in ['tabella', 'bottone_traceroute','label_subnet', 'label_dispositivi']:
-                    widget.pack()
-
-    def nascondi_componenti_traceroute(self):
-        for widget in self.widgets:
-            # Verifica se il widget ha l'attributo 'widget_name' e se corrisponde ai nomi richiesti
-            if hasattr(widget, 'widget_name'):
-                if widget.widget_name in ['frame_result','label_traceroute', 'entry_traceroute',
-                                          'bottone_esegui_traceroute']:
-                    widget.pack_forget()
-    def nascondi_tasto_esegui_traceroute(self):
-        for widget in self.widgets:
-            # Verifica se il widget ha l'attributo 'widget_name' e se corrisponde ai nomi richiesti
-            if hasattr(widget, 'widget_name'):
-                if widget.widget_name in ['bottone_esegui_traceroute']:
-                    widget.pack_forget()
-
     def mostra_componenti_traceroute(self):
-        # Titolo centrato
         titolo_label = tk.Label(self.master, text="Traceroute", font=("Tahoma", 16))
-        titolo_label.pack(pady=2)  # Padding per dare spazio sopra e sotto il titolo
+        titolo_label.pack(pady=2)
         # Frame per input traceroute
         traceroute_frame = tk.Frame(self.master)
         traceroute_frame.pack(pady=2, fill="x")  # Ridotto il padding superiore
@@ -219,19 +168,13 @@ class VistaPrincipale(tk.Frame):
         self.tree_result.pack(fill="both", expand=True)
         self.tree_result.widget_name = "tree_result"
         self.widgets.append(self.tree_result)
-        # Forza l'aggiornamento del layout
-
 
     def aggiorna_tabella_risultati(self):
         lista_traceroute = self.modello.ottieni_bean("Traceroute")
-
-        # Verifica che la lista non sia vuota
         if lista_traceroute and len(lista_traceroute) > 0:
-            # Pulisce la tabella prima di aggiornare i nuovi risultati
             for item in self.tree_result.get_children():
                 self.tree_result.delete(item)
 
-            # Aggiungi i nuovi risultati alla tabella
             for risultato in lista_traceroute:
                 tempo_ms_format = f"{risultato.tempo_ms:.3f}"
                 self.tree_result.insert(
@@ -245,31 +188,9 @@ class VistaPrincipale(tk.Frame):
         messagebox.showerror(title, message)
         return
 
-    def mostra_finestra_dialogo(self,titolo,etichetta):
-        self.dialog = tk.Toplevel(self.master)
-        self.dialog.title(titolo)
-        self.dialog.geometry("300x100")
-        self.dialog.transient(self.master)  # Fa sì che la finestra sia figlia della finestra principale
-        self.dialog.grab_set()  # Rende la finestra modale
-
-        # Centra la finestra di dialogo rispetto alla finestra principale
-        self.centra_finestra(self.dialog, 300, 100)
-
-        # Etichetta informativa
-        label = ttk.Label(self.dialog, text=etichetta, font=("Arial", 12))
-        label.pack(expand=True, pady=20)
-
-    def chiudi_finestra_dialogo(self):
-        self.dialog.destroy()
-
     def centra_finestra(self, finestra, larghezza, altezza):
-        """Centra la finestra rispetto alla finestra principale."""
-        finestra_principale = self.master  # Tk root
-        finestra_principale.update_idletasks()  # Aggiorna le dimensioni
-
-        # Calcola la posizione
+        finestra_principale = self.master
+        finestra_principale.update_idletasks()
         x_pos = finestra_principale.winfo_x() + (finestra_principale.winfo_width() // 2) - (larghezza // 2)
         y_pos = finestra_principale.winfo_y() + (finestra_principale.winfo_height() // 2) - (altezza // 2)
-
-        # Imposta la geometria della finestra
         finestra.geometry(f"{larghezza}x{altezza}+{x_pos}+{y_pos}")

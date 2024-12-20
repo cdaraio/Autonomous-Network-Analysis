@@ -1,3 +1,4 @@
+
 class Traceroute:
     def __init__(self, hop, ip, hostname, tempo_ms, regione):
         self.hop = hop

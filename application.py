@@ -1,12 +1,10 @@
 import tkinter as tk
 import logging
-
 from controllo.controlloFrame import ControlloFrame
 from modello.modello import Modello
 from vista.vista_principale import VistaPrincipale
 from vista.frame import MainFrame
 
-# Logger configurazione
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -26,8 +24,7 @@ class Application:
         return cls._singleton
 
     def _init_singleton(self):
-        """Inizializza una sola volta."""
-        self.logger = logging.getLogger(__name__)  # Logger inizializzato qui
+        self.logger = logging.getLogger(__name__)
         self.vista_principale = None
         self.controllo_principale = None
         self.controllo_frame= ControlloFrame()
@@ -40,18 +37,14 @@ class Application:
         # Crea la finestra principale
         self.frame = MainFrame(controllo_frame=self.controllo_frame)
 
-        logo = tk.PhotoImage(file="src/images/logo.png")  # Usa il formato che preferisci (es. PNG, ICO, etc.)
-        self.frame.iconphoto(True, logo)  # Imposta l'icona sulla finestra principale
+        logo = tk.PhotoImage(file="src/images/logo.png")
+        self.frame.iconphoto(True, logo)
 
-        # Crea il ControlloPrincipale senza la vista
         self.controllo_principale = ControlloPrincipale(self.modello, vista_principale=None, logger=self.logger)
-
-        # Crea la VistaPrincipale e passa il ControlloPrincipale
         self.vista_principale = VistaPrincipale(self.frame, controllo_principale=self.controllo_principale,
                                                 modello=self.modello)
-        # Aggiornamento del ControlloPrincipale con la vista
         self.controllo_principale.vista_principale = self.vista_principale
-        self.frame.set_view(self.vista_principale)  # Imposta la vista principale
+        self.frame.set_view(self.vista_principale)
         self.frame.mainloop()
 
     @staticmethod
@@ -65,8 +58,6 @@ class Application:
         """Metodo per ottenere l'istanza singleton."""
         return Application()
 
-
-# Avvio dell'applicazione
 if __name__ == "__main__":
     applicazione = Application.get_instance()
-    applicazione.main()  # Avvia l'applicazione
+    applicazione.main()

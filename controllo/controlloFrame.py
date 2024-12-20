@@ -1,7 +1,5 @@
 from tkinter import messagebox
-
 from modello.costanti import Costanti
-
 
 class ControlloFrame:
     def __init__(self):

@@ -1,3 +1,4 @@
+
 class Costanti:
     DISPOSITIVI = "DISPOSITIVI"
     LISTA_FILTRATA = "LISTA_FILTRATA"

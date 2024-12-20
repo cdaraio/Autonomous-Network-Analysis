@@ -1,25 +1,15 @@
-import socket
-import subprocess
 import tkinter as tk
 from datetime import time
 from tkinter import ttk, messagebox
-import socket
-import struct
-import time
-
 import ipinfo
 from scapy.all import *
-import argparse
 from pyvis.network import Network
-from scapy.layers.inet import traceroute, UDP, IP
-from tkinterhtml import HtmlFrame
+from scapy.layers.inet import UDP, IP
 from modello.costanti import Costanti
-from modello.enum_dispositivo import TipoDispositivo
 from modello.scanner import ScannerRete
 import threading
 import logging
 import os
-
 from modello.traceroute import Traceroute
 from vista.vista_grafo import ExtraGraphWindow
 
@@ -34,10 +24,8 @@ class ControlloPrincipale:
         self.scanner = ScannerRete(self.logger)
         self.vista_principale = vista_principale
         self.lista_traceroute = []
-        self.scansione_interrotta = False
-        self.thread_scansione = None
         self.modello = modello
-        # Inizializzazione ipinfo_handler
+
         access_token = "4614054d77f209"  #token API
         self.ipinfo_handler = ipinfo.getHandler(access_token)
 
@@ -47,53 +35,39 @@ class ControlloPrincipale:
         def esegui_traceroute():
             """Funzione per eseguire il traceroute in un thread separato."""
             try:
-                # Verifica che il target non sia vuoto prima di mostrare la finestra di dialogo
                 if not target:
-                    # Se il target è vuoto, mostra solo l'errore senza procedere ulteriormente
                     self.vista_principale.mostra_messaggio_errore("Errore", "Il campo indirizzo non può essere vuoto.")
                     return
 
-                # Crea una finestra di dialogo per il progresso
                 self.dialogo = tk.Toplevel(self.vista_principale)
                 self.dialogo.title("Traceroute in corso")
                 self.dialogo.grab_set()
-                # Disabilita la "X" di chiusura
                 self.dialogo.protocol("WM_DELETE_WINDOW", self.ignora_chiusura)
 
-                # Etichetta per il messaggio
                 etichetta = ttk.Label(self.dialogo, text=f"Traceroute verso {target} in corso...")
                 etichetta.pack(pady=10)
 
-                # Progress bar in modalità determinata (con intervallo da 0 a 100)
                 self.progress = ttk.Progressbar(self.dialogo, orient='horizontal', mode='determinate', length=250)
                 self.progress.pack(pady=10, padx=20, fill='x')
-                self.progress["value"] = 0  # Inizializza la progress bar a 0
-                self.progress["maximum"] = 100  # Imposta il valore massimo a 100
+                self.progress["value"] = 0
+                self.progress["maximum"] = 100
 
-                # Centra la finestra di dialogo con la progress bar
                 self.centra_progress(self.dialogo, 300, 100)
 
-                # Esegui il traceroute
                 self.scan_traceroute(target, self.progress)
-
-                # Una volta completata la scansione, chiudi la finestra di dialogo
                 self.dialogo.destroy()
-
-                # Una volta che i dati sono stati aggiornati nel modello, aggiorna la tabella dei risultati
                 self.vista_principale.aggiorna_tabella_risultati()
 
             except Exception as e:
-                # Gestisci le eccezioni: chiudi la finestra di dialogo e mostra il messaggio di errore
                 if self.dialogo:
-                    self.dialogo.destroy()  # Chiude la finestra di dialogo se c'è un errore
+                    self.dialogo.destroy()
                 self.vista_principale.mostra_messaggio_errore("Errore", f"Si è verificato un errore: {e}")
 
         # Crea un thread per eseguire la scansione senza bloccare la GUI
         thread = threading.Thread(target=esegui_traceroute)
-        thread.start()  # Avvia il thread
+        thread.start()
 
     def ignora_chiusura(self):
-        """Non fare nulla quando l'utente prova a chiudere la finestra"""
         pass
 
     def scan_traceroute(self, target, progress_bar):
@@ -101,7 +75,6 @@ class ControlloPrincipale:
             self.vista_principale.mostra_messaggio_errore("Errore", "Il campo indirizzo non può essere vuoto.")
             return
 
-        # Verifica se il target è risolvibile tramite DNS
         try:
             socket.gethostbyname(target)
         except socket.gaierror:
@@ -188,7 +161,6 @@ class ControlloPrincipale:
             return "N/D"
 
     def _get_regione(self, ip):
-        """Restituisce la regione geografica per un dato IP utilizzando ipinfo_handler."""
         import ipaddress
 
         # Verifica se l'IP è valido
@@ -201,8 +173,6 @@ class ControlloPrincipale:
         # Recupera i dettagli dal servizio ipinfo
         try:
             details = self.ipinfo_handler.getDetails(ip)
-
-            # Accedi direttamente alla proprietà 'region' dell'oggetto Details
             regione = details.region if details.region else "Sconosciuta"  # Usa 'Sconosciuta' se la regione non è disponibile
 
             return regione
@@ -224,7 +194,7 @@ class ControlloPrincipale:
             return
 
         path_grafo = self.crea_grafo(dispositivi)
-        ExtraGraphWindow(self.vista_principale, path_grafo)  # Apri una finestra secondaria
+        ExtraGraphWindow(self.vista_principale, path_grafo)
 
     def crea_grafo(self, dispositivi):
         net = Network(notebook=False, height="800px", width="100%", bgcolor="#222222", font_color="white")
@@ -255,7 +225,7 @@ class ControlloPrincipale:
         if router:
             # Se il router viene trovato, aggiungilo come nodo centrale
             net.add_node(router["IP"], label=f"Router\nIP: {router['IP']}\nMAC: {router['MAC']}", color="red", size=30,
-                         image=icon_dict['Router'], shape="image")  # Usa l'immagine per il router
+                         image=icon_dict['Router'], shape="image")
 
             # Aggiungi gli altri dispositivi come nodi e collegali al router
             for dispositivo in dispositivi:
@@ -264,7 +234,7 @@ class ControlloPrincipale:
                         dispositivo["IP"],
                         label=f"IP: {dispositivo['IP']}\nMAC: {dispositivo['MAC']}\nSO: {dispositivo['Sistema Operativo']}",
                         color="lightblue", size=20, image=icon_dict[dispositivo["Tipologia"]], shape="image"
-                        # Usa l'immagine basata sulla tipologia
+
                     )
                     net.add_edge(router["IP"], dispositivo["IP"])  # Collegamento al router
 
@@ -290,15 +260,11 @@ class ControlloPrincipale:
         return output_path
 
     def azione_avvia_scansione(self):
-        # Crea la finestra di dialogo con una progress bar
         titolo = "Scansione in corso"
         self.dialogo = tk.Toplevel(self.vista_principale)
         self.dialogo.title(titolo)
-
-        # Disabilita la "X" di chiusura
         self.dialogo.protocol("WM_DELETE_WINDOW", self.ignora_chiusura)
 
-        # Etichetta per il messaggio
         etichetta = ttk.Label(self.dialogo, text="Scansione in corso...")
         etichetta.pack(pady=10)
 
@@ -307,8 +273,6 @@ class ControlloPrincipale:
         self.progress.pack(pady=10, padx=20, fill='x')
         self.progress["value"] = 0  # Inizializza la progress bar a 0
         self.progress["maximum"] = 100  # Imposta il valore massimo a 100
-
-        # Centra la finestra di dialogo con la progress bar
         self.centra_progress(self.dialogo, 300, 100)
 
         # Funzione per avviare la scansione in un thread separato
@@ -339,10 +303,9 @@ class ControlloPrincipale:
                     progresso = (i / numero_dispositivi) * 100
                     self.progress["value"] = progresso
                     self.dialogo.update_idletasks()  # Aggiorna la GUI
-                    threading.Event().wait(0.1)  # Aggiungi un piccolo ritardo per aggiornare la progress bar
+                    threading.Event().wait(0.1)  # ritardo per aggiornare la progress bar
 
             finally:
-                # Ferma la progress bar e chiudi la finestra di dialogo
                 self.progress["value"] = 100
                 self.dialogo.destroy()
 
@@ -351,7 +314,7 @@ class ControlloPrincipale:
 
     def centra_progress(self, finestra, larghezza, altezza):
         """Centra la finestra rispetto alla finestra principale."""
-        finestra_principale = self.vista_principale.master # La finestra principale
+        finestra_principale = self.vista_principale.master
         finestra_principale.update_idletasks()  # Aggiorna le dimensioni
 
         # Calcola la posizione

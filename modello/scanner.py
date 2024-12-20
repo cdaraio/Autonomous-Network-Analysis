@@ -1,16 +1,12 @@
 import scapy.all as scapy
 import socket
 import time
-import logging
 
 from application import Application
-from modello.subnet import Subnet
-
 
 class ScannerRete:
     def __init__(self, logger):
-        self.logger = Application.get_instance().logger  # Salviamo il logger per usarlo successivamente
-        self.subnet_trovate = []  # Lista per memorizzare gli oggetti Subnet
+        self.logger = Application.get_instance().logger
 
     def get_ip_range(self):
         """Funzione per ottenere l'IP di destinazione e la subnet"""
@@ -32,42 +28,32 @@ class ScannerRete:
 
             if not dispositivi:
                 self.logger.warning("Nessun dispositivo trovato nella rete.")
-
-            if self.subnet_trovate:
-                self.logger.info(f"Subnet trovate: {self.subnet_trovate}")
-            else:
-                self.logger.info("Nessuna subnet aggiuntiva trovata.")
-            return dispositivi  # Restituisci la lista dei dispositivi rilevati
+            return dispositivi
 
         except Exception as e:
             self.logger.error(f"Errore durante la scansione della rete: {e}")
-            return []  # In caso di errore, ritorna una lista vuota
+            return []
 
     def scan_dispositivi(self, ip_range):
-        # Log l'avvio della scansione sulla rete
         self.logger.info(f"Avvio scansione sulla rete: {ip_range}")
 
-        # Lista per memorizzare i dispositivi trovati
         dispositivi = []
 
-        # Creiamo una richiesta ARP per tutti gli indirizzi IP nella subnet
+        # richiesta ARP per tutti gli indirizzi IP nella subnet
         arp_request = scapy.ARP(pdst=ip_range)
         broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")  # Broadcast Ethernet per tutti gli indirizzi MAC
         richiesta_completa = broadcast / arp_request
 
-        # Invia la richiesta ARP e ottieni tutte le risposte
         risposte = scapy.srp(richiesta_completa, timeout=10, verbose=False)[0]
 
-        # Log per mostrare il numero di risposte ARP ricevute
         self.logger.info(f"Numero di risposte ARP ricevute: {len(risposte)}")
 
-        # Ciclo sulle risposte ARP per raccogliere informazioni
         for risposta in risposte:
-            ip = risposta[1].psrc  # IP del dispositivo che ha risposto
-            mac = risposta[1].hwsrc  # MAC del dispositivo che ha risposto
+            ip = risposta[1].psrc
+            mac = risposta[1].hwsrc
 
             try:
-                # Esegui il ping ICMP per ottenere ulteriori informazioni
+                # ping ICMP per ottenere ulteriori informazioni
                 start_time = time.time()  # Registra il tempo di partenza
                 risposta_ping = scapy.sr1(scapy.IP(dst=ip) / scapy.ICMP(), timeout=1, verbose=False)
                 if risposta_ping:
@@ -78,11 +64,8 @@ class ScannerRete:
                     ttl = "Sconosciuto"
                     tempo_risposta = "Non disponibile"
                     sistema_operativo = "Sconosciuto"
-
                 # Scansiona le porte per rilevare i servizi attivi sul dispositivo
                 servizi_attivi = self.scan_ports(ip)
-
-                # Crea un dizionario con tutte le informazioni sul dispositivo
                 dispositivo = {
                     'IP': ip,
                     'MAC': mac,
@@ -92,21 +75,11 @@ class ScannerRete:
                                                                                  float) else tempo_risposta,
                     'Servizi Attivi': servizi_attivi
                 }
-
-                # Classifica il dispositivo in base alle informazioni raccolte
                 dispositivo['Tipologia'] = self.classifica_dispositivo(dispositivo)
-
-                # Aggiungi il dispositivo alla lista
                 dispositivi.append(dispositivo)
-
-                # Log per mostrare il dispositivo trovato
                 self.logger.info(f"Dispositivo trovato: {dispositivo}")
-
             except Exception as e:
-                # Log in caso di errore durante la scansione di un dispositivo
                 self.logger.error(f"Errore durante la scansione di {ip}: {e}")
-
-        # Ritorna la lista dei dispositivi trovati
         return dispositivi
 
     def ping_ip(self, ip):
@@ -154,40 +127,10 @@ class ScannerRete:
             self.logger.error(f"Errore durante la deduzione del sistema operativo per TTL {ttl}: {e}")
             return "Sconosciuto"
 
-    def detect_other_subnets(self, ip, tipo_rete="Sconosciuto", dispositivi=None, gateway=None):
-        """Funzione per rilevare altre subnet tramite un ping a un dispositivo"""
-        try:
-            ip_parts = ip.split(".")
-            indirizzo_subnet = ".".join(ip_parts[:3]) + ".0"
-            maschera = "24"
-
-            if indirizzo_subnet not in [subnet.indirizzo for subnet in self.subnet_trovate]:
-                nuova_subnet = Subnet(
-                    indirizzo=indirizzo_subnet,
-                    maschera=maschera,
-                    tipo_rete=tipo_rete,
-                    dispositivi=dispositivi,
-                    gateway=gateway
-                )
-                self.subnet_trovate.append(nuova_subnet)
-                self.logger.info(f"Nuova subnet trovata: {nuova_subnet}")
-        except Exception as e:
-            self.logger.error(f"Errore durante il rilevamento di altre subnet per IP {ip}: {e}")
-
     def classifica_dispositivo(self, dispositivo):
-        """
-        Metodo per determinare se un dispositivo è un client, un server, un router o un dispositivo domestico.
-
-        :param dispositivo: Dizionario con le informazioni del dispositivo.
-        :return: Stringa che indica il tipo di dispositivo.
-        """
-        # Estrai le informazioni dal dizionario del dispositivo
-        ip = dispositivo.get('IP', 'Sconosciuto')
         mac = dispositivo.get('MAC', 'Sconosciuto')
         servizi = dispositivo.get('Servizi Attivi', {})
         ttl = dispositivo.get('TTL', 'Sconosciuto')
-
-        # Lista di prefissi MAC per dispositivi domestici comuni
         mac_prefissi_domestici = [
             '00:1E:C2',  # Apple (iPhone, iPad, Mac)
             'A4:8E:34',  # Apple (iPhone, iPad, Mac)
@@ -201,30 +144,21 @@ class ScannerRete:
             'D0:67:E5',  # Netgear (Router)
             '00:50:56'  # VMware (Spesso associato a dispositivi virtuali)
         ]
-
-        # Heuristics per determinare il tipo
-
         # Se il MAC address inizia con uno dei prefissi comuni per i router
         if mac.startswith("00:00:5E") or mac.startswith("00:50:56"):
             return "Router"
-
         # Se il MAC address appartiene a dispositivi domestici (smartphone, smart TV, ecc.)
         if any(mac.startswith(prefisso) for prefisso in mac_prefissi_domestici):
             return "Dispositivo Domestico"
 
-        # Se il dispositivo ha una delle porte 80 o 443 **e** la porta 53 aperte, consideralo un router
         if (80 in servizi or 443 in servizi) and 53 in servizi:
             return "Router"
 
-        # Verifica la presenza di altre porte comuni per determinare se è un server
         elif any(port in servizi for port in [80, 443, 22, 21, 53, 25, 110]):
             return "Server"
 
-        # Se il TTL è alto (es. più di 64), potrebbe essere un router o un server
         elif isinstance(ttl, int) and ttl > 64:
-            # Se il dispositivo ha porte comuni di server (80 o 443), consideriamo un "Router"
+            # Se il dispositivo ha porte comuni di server (80 o 443), lo consideriamo un Router
             return "Router" if 80 in servizi or 443 in servizi else "Client"
-
-        # Se nessuna delle condizioni sopra è vera, classifica come "Client"
         else:
             return "Client"
